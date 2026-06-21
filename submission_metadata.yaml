@@ -19,7 +19,7 @@ github_repo: "https://github.com/nakul-3205/Redrob-hackathon"
 
 sandbox_link: "https://huggingface.co/spaces/nakul-3205/nakul-builds"
 
-reproduce_command: "python src/rank.py --candidates ./candidates.jsonl --out ./submission.csv"
+reproduce_command: "python rank.py --candidates ./candidates.jsonl --out ./submission.csv"
 
 # ============================================================================
 # Compute environment
