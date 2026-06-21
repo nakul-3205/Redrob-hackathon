@@ -1,6 +1,6 @@
-# submission_metadata.yaml
-
-# ── Team identity ──────────────────────────────────────────────────────────
+# ============================================================================
+# Team identity
+# ============================================================================
 team_name: "nakul-builds"
 primary_contact:
   name: "Nakul Kejriwal"
@@ -10,57 +10,80 @@ primary_contact:
 team_members:
   - name: "Nakul Kejriwal"
     email: "nakulkejriwal@gmail.com"
-    role: "AI/ML Engineer"
+    role: "Solo — ML Pipeline, System Design, Deployment"
 
-# ── Code and reproducibility ───────────────────────────────────────────────
+# ============================================================================
+# Code and reproducibility
+# ============================================================================
 github_repo: "https://github.com/nakul-3205/Redrob-hackathon"
-sandbox_link: "https://huggingface.co/spaces/YOURUSERNAME/redrob-ranker"
 
-reproduce_command: "python rank.py --candidates candidates.jsonl --out team_nakul-builds.csv"
+sandbox_link: "https://huggingface.co/spaces/nakul-3205/nakul-builds"
 
-# ── Compute environment ────────────────────────────────────────────────────
+reproduce_command: "python src/rank.py --candidates ./candidates.jsonl --out ./submission.csv"
+
+# ============================================================================
+# Compute environment
+# ============================================================================
 compute:
-  platform: "Windows 11"
+  platform: "Windows 11 — Local Machine"
   cpu_cores: 4
   ram_gb: 16
-  python_version: "3.13"
+  python_version: "3.11"
   os: "Windows 11"
   uses_gpu_for_inference: false
   has_network_during_ranking: false
   pre_computation_required: false
   pre_computation_time_minutes: 0
 
-# ── AI tools declaration ───────────────────────────────────────────────────
+# ============================================================================
+# AI tools declaration
+# ============================================================================
 ai_tools_used:
   - "Claude"
 
 ai_usage_summary: |
-  Used Claude for architectural discussion, code review, and debugging.
-  The scoring logic, weight tuning, and design decisions were done by me.
-  No candidate data was fed to any LLM at any point.
-  The ranking step makes zero external API calls.
+  Used Claude for code review, architectural discussion, and debugging.
+  No candidate data was fed to any LLM. All scoring logic is deterministic
+  and rule-based. The ranking pipeline makes zero API calls during execution.
 
-# ── Approach summary ───────────────────────────────────────────────────────
+# ============================================================================
+# Approach summary
+# ============================================================================
 methodology_summary: |
-  Rule-based candidate ranker with five components: honeypot detection,
-  career scorer, skill scorer, behavioral signal scorer, and a weighted
-  combiner. Honeypot detection flags profiles with impossible skill
-  durations or expert inflation before scoring begins. Career scorer
-  hard-kills mismatched titles (HR Managers, Accountants, etc.) regardless
-  of skills, eliminating keyword stuffers entirely. Skill scorer weights
-  must-have retrieval skills (FAISS, Qdrant, Weaviate, embeddings, NDCG,
-  learning-to-rank) using proficiency x log(duration) x trust, where trust
-  is derived from platform assessment scores over peer endorsements over
-  self-claims. Signal scorer covers all 23 behavioral signals with emphasis
-  on recency, recruiter response rate, notice period, and location relative
-  to target cities. Job description text is scanned to boost candidates
-  whose titles are weak but whose actual work was retrieval-related. Final
-  score combines components 40/35/25 skill/career/signal, with signal also
-  applied as a multiplier to gate truly unavailable candidates. Reasoning
-  strings are assembled from computed features — no LLM calls at runtime.
-  Runs in ~25 seconds on 100K candidates, CPU only.
+  Rule-based multi-signal ranker derived directly from the JD's explicit and
+  implicit requirements. The pipeline has six stages:
 
-# ── Declarations ───────────────────────────────────────────────────────────
+  1. Honeypot detection — four hard checks catch fabricated profiles before
+     any scoring: impossible skill durations (>1.2x YoE), expert inflation
+     (8+ expert skills with <3 YoE), career timeline overlap (past job months
+     >1.6x stated YoE), and age-impossibility from career start dates.
+
+  2. Hard title kill — titles like HR Manager, Accountant, Civil Engineer are
+     eliminated immediately via a tiered lookup; career score of 0.0 is a
+     short-circuit with no further scoring.
+
+  3. Skill score (40% weight) — each skill value = proficiency_weight x
+     trust_multiplier x log_duration_bonus. Trust is derived from platform
+     assessment scores > peer endorsements > self-claimed. Skills mapped to
+     MUST_HAVE, NICE_TO_HAVE, and NEGATIVE buckets from the JD. Two special
+     penalties: LangChain/LlamaIndex wrapper-only flag (-0.15), and off-domain
+     (pure CV/speech with no NLP/IR depth) penalty.
+
+  4. Career score (35% weight) — title tier (50%) + YoE band (30%) + company
+     background (20%). Company score is duration-weighted over career history;
+     product tech companies score 0.95, pure consulting firms 0.20.
+
+  5. Signal score (25% weight) — recency (30%), recruiter responsiveness (25%),
+     notice period (20%), location match (15%), extras such as GitHub activity
+     and profile completeness (10%).
+
+  6. Combine — weighted sum multiplied by an availability multiplier
+     (0.55 + 0.45 × signal) so unreachable candidates are penalised but not
+     zeroed. Runtime: ~13 seconds for 100K candidates on CPU.
+
+# ============================================================================
+# Declarations
+# ============================================================================
 declarations:
   read_submission_spec: true
   code_is_original_work: true

@@ -1,3 +1,4 @@
-tqdm
-streamlit
+altair
 pandas
+streamlit
+tqdm
